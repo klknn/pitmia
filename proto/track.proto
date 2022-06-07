@@ -1,0 +1,106 @@
+// Track protobuf messages.
+
+syntax = "proto3";
+
+package pitmia;
+
+import "proto/common.proto";
+import "proto/parameter.proto";
+
+message Lane {
+  Referencable base = 1;
+}
+
+message Device {
+  Referencable base = 1;
+
+  // This device is enabled (as in not bypassed).
+  BoolParameter enabled = 2;
+
+  enum DeviceRole {
+    INSTRUMENT = 0;
+    NOTE_FX = 1;
+    AUDIO_FX = 2;
+    ANALYZER = 3;
+  }
+  DeviceRole device_role = 3;
+
+  bool loaded = 4;  // default should be true.
+
+  // Name of the device/plugin
+  string device_name = 5;
+
+  // Unique identifier of device/plug-in
+  // For standards which use UUID as an identifier use the textual
+  // representation of the UUID (VST3)
+  // For standards which use an integer as an identifier use the value in
+  // decimal form. Base-10 unsigned. (VST2)
+  string device_id = 6;
+
+  // Vendor name of the device/plugin
+  string device_vendor = 7;
+
+  // Path to a file representing the device / plug-in state in its native format
+  FileReference state = 8;
+
+  repeated Parameter automated_parameters = 9;
+}
+
+// Represents a mixer channel.
+message Channel {
+  Lane base = 1;
+
+  // Role of this channel in the mixer.
+  enum MixerRole {
+    REGULAR = 0;
+    MASTER = 1;
+    EFFECT_TRACK = 2;
+    SUB_MIX = 3;
+    VCA = 4;
+  }
+  MixerRole role = 2;
+
+  int32 audio_channels = 3;
+  RealParameter pan = 4;
+  BoolParameter mute = 5;
+  bool solo = 6;
+
+  // Output channel routing
+  Channel destination = 7;
+
+  repeated Send sends = 8;
+  repeated Device devices = 9;
+}
+
+message Send {
+  Referencable base = 1;
+  RealParameter volume = 2;
+  RealParameter pan = 3;
+
+  enum SendType {
+    PRE = 0;
+    POST = 1;  // WARNING: Original PRE was 0 but POST should be default.
+  }
+  SendType type = 4;
+
+  Channel destination = 5;
+}
+
+message Track {
+  Lane base = 1;
+
+  // Role of this track in timelines & arranger.
+  enum ContentType {
+    AUDIO = 0;
+    AUTOMATION = 1;
+    NOTES = 2;
+    VIDEO = 3;
+    MARKERS = 4;
+    TRACKS = 5;
+  }
+  repeated ContentType contentType = 2;
+
+  bool loaded = 3;
+  Channel channel = 4;
+  repeated Track tracks = 5;
+}

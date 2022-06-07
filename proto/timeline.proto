@@ -1,0 +1,88 @@
+// Protobuf port of classes in
+// https://github.com/bitwig/dawproject/tree/main/src/main/java/com/bitwig/dawproject/timeline
+
+syntax = "proto3";
+
+package pitmia;
+
+import "proto/common.proto";
+import "proto/track.proto";
+import "proto/parameter.proto";
+
+message Timeline {
+  Referencable base = 1;
+  // When present, the timeline is local to this track.
+  Track track = 2;
+
+  // The Timebase used by this and nested timelines. If no timebase is provided
+  // by this or the parent scope then  'beats' will be used.
+  enum Timebase {
+    BEATS = 0; // quarter-notes
+    SECONDS = 1;
+  }
+  Timebase timebase = 3;
+}
+
+message Lanes {
+  Timeline base = 1;
+
+  // Lanes representing nested content
+  repeated Timeline lanes = 2;
+}
+
+message AutomationTarget {
+  Parameter parameter = 1;
+
+  enum ExpressionType {
+    GAIN = 0;
+    PAN = 1;
+    TRANSPOSE = 2;
+    TIMBRE = 3;
+    FORMANT = 4;
+    PRESSURE = 5;
+
+    // MIDI
+    CHANNEL_CONTROLLER = 6;
+    CHANNEL_PRESSURE = 7;
+    POLY_PRESSURE = 8;
+    PITCH_BEND = 9;
+    PROGRAM_CHANGE = 10;
+  }
+  ExpressionType expression = 2;
+
+  // MIDI channel
+  int32 channel = 3;
+  // MIDI key used when expression = POLY_PRESSURE.
+  int32 key = 4;
+  // MIDI key used when expression = CHANNEL_CONTROLLER.
+  int32 controller = 5;
+}
+
+message Point {
+  double time = 1;
+}
+
+message Points {
+  Timeline base = 1;
+  AutomationTarget target = 2;
+  repeated Point points = 3;
+  Unit unit = 4;
+
+  // Interpolation mode used for this timeline. Default to 'hold' when
+  // unspecified.
+  enum Interpolation {
+    HOLD = 0;
+    LINEAR = 1;
+  }
+  Interpolation interporation = 5;
+}
+
+message Marker {
+  Namable base = 1;
+  double time = 2;
+}
+
+message Markers {
+  Timeline base = 1;
+  repeated Marker markers = 2;
+}

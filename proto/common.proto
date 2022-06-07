@@ -1,0 +1,39 @@
+// Common protobuf messages.
+
+syntax = "proto3";
+
+package pitmia;
+
+message Namable {
+  string name = 1;
+  string color = 2;
+  string comment = 3;
+}
+
+message Referencable {
+  Namable base = 1;
+  string id = 2; // e.g. "id0", "id123"
+}
+
+enum Unit {
+  LINEAR = 0;
+  NORMALIZED = 1;
+  PERCENT = 2;
+  DECIBEL = 3;
+  HERTZ = 4;
+  SEMITONES = 5;
+  SECONDS = 6;
+  BEATS = 7;
+  BPM = 8;
+}
+
+message FileReference {
+  // Relative path. either
+  //   1) within the container
+  //   2) relative to .dawproject file (when isExternal = "true")
+  string path = 1;
+
+  // When true, the path is relative to the .dawproject file. Default value is
+  // false.
+  bool external = 2;
+}

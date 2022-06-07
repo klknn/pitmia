@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "proto/common.proto";
+
+package pitmia;
+
+message Parameter {
+  Referencable base = 1;
+  int32 parameter_id = 2;
+}
+
+message RealParameter {
+  Parameter base = 1;
+  double value = 2;
+  Unit unit = 3;
+  double min = 4;
+  double max = 5;
+}
+
+message BoolParameter {
+  Parameter base = 1;
+  bool value = 2;
+}
+
+message TimeSignatureParameter {
+  Parameter base = 1;
+  int32 numerator = 2;
+  int32 denominator = 3;
+}
