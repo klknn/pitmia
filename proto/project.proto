@@ -1,0 +1,284 @@
+// Protobuf translation of https://github.com/bitwig/dawproject
+// As Protobuf message doesn't support inheritance unlike Java class, we use
+// `base` fields to contain base class fields.
+//
+// This minimal schema is also interesting
+// https://github.com/hotwatermorning/Terra/blob/develop/schema/project.proto
+
+syntax = "proto3";
+
+package pitmia;
+
+message Namable {
+  string name = 1;
+  string color = 2;
+  string comment = 3;
+}
+
+message Referencable {
+  Namable base = 1;
+  string id = 2; // e.g. "id0", "id123"
+}
+
+message Parameter {
+  Referencable base = 1;
+  int32 parameter_id = 2;
+}
+
+enum Unit {
+  LINEAR = 0;
+  NORMALIZED = 1;
+  PERCENT = 2;
+  DECIBEL = 3;
+  HERTZ = 4;
+  SEMITONES = 5;
+  SECONDS = 6;
+  BEATS = 7;
+  BPM = 8;
+}
+
+message RealParameter {
+  Parameter base = 1;
+  double value = 2;
+  Unit unit = 3;
+  double min = 4;
+  double max = 5;
+}
+
+message BoolParameter {
+  Parameter base = 1;
+  bool value = 2;
+}
+
+message TimeSignatureParameter {
+  int32 numerator = 1;
+  int32 denominator = 2;
+}
+
+message Transport {
+  RealParameter tempo = 1;
+  TimeSignatureParameter time_signature = 2;
+}
+
+message Lane {
+  Referencable base = 1;
+}
+
+message Send {
+  Referencable base = 1;
+  RealParameter volume = 2;
+  RealParameter pan = 3;
+
+  enum SendType {
+    PRE = 0;
+    POST = 1;  // WARNING: Original PRE was 0 but POST should be default.
+  }
+  SendType type = 4;
+
+  Channel destination = 5;
+}
+
+message FileReference {
+  // Relative path. either
+  //   1) within the container
+  //   2) relative to .dawproject file (when isExternal = "true")
+  string path = 1;
+
+  // When true, the path is relative to the .dawproject file. Default value is
+  // false.
+  bool external = 2;
+}
+
+message Device {
+  Referencable base = 1;
+
+  // This device is enabled (as in not bypassed).
+  BoolParameter enabled = 2;
+
+  enum DeviceRole {
+    INSTRUMENT = 0;
+    NOTE_FX = 1;
+    AUDIO_FX = 2;
+    ANALYZER = 3;
+  }
+  DeviceRole device_role = 3;
+
+  bool loaded = 4;  // default should be true.
+
+  // Name of the device/plugin
+  string device_name = 5;
+
+  // Unique identifier of device/plug-in
+  // For standards which use UUID as an identifier use the textual
+  // representation of the UUID (VST3)
+  // For standards which use an integer as an identifier use the value in
+  // decimal form. Base-10 unsigned. (VST2)
+  string device_id = 6;
+
+  // Vendor name of the device/plugin
+  string device_vendor = 7;
+
+  // Path to a file representing the device / plug-in state in its native format
+  FileReference state = 8;
+
+  repeated Parameter automated_parameters = 9;
+}
+
+// Represents a mixer channel.
+message Channel {
+  Lane base = 1;
+
+  // Role of this channel in the mixer.
+  enum MixerRole {
+    REGULAR = 0;
+    MASTER = 1;
+    EFFECT_TRACK = 2;
+    SUB_MIX = 3;
+    VCA = 4;
+  }
+  MixerRole role = 2;
+
+  int32 audio_channels = 3;
+  RealParameter pan = 4;
+  BoolParameter mute = 5;
+  bool solo = 6;
+
+  // Output channel routing
+  Channel destination = 7;
+
+  repeated Send sends = 8;
+  repeated Device devices = 9;
+}
+
+message Track {
+  Lane base = 1;
+
+  // Role of this track in timelines & arranger.
+  enum ContentType {
+    AUDIO = 0;
+    AUTOMATION = 1;
+    NOTES = 2;
+    VIDEO = 3;
+    MARKERS = 4;
+    TRACKS = 5;
+  }
+  repeated ContentType contentType = 2;
+
+  bool loaded = 3;
+  Channel channel = 4;
+  repeated Track tracks = 5;
+}
+
+// BEGIN: Originally defined in timeline dir.
+
+message Timeline {
+  Referencable base = 1;
+  // When present, the timeline is local to this track.
+  Track track = 2;
+
+  // The Timebase used by this and nested timelines. If no timebase is provided
+  // by this or the parent scope then  'beats' will be used.
+  enum Timebase {
+    BEATS = 0; // quarter-notes
+    SECONDS = 1;
+  }
+  Timebase timebase = 3;
+}
+
+message Lanes {
+  Timeline base = 1;
+
+  // Lanes representing nested content
+  repeated Timeline lanes = 2;
+}
+
+message AutomationTarget {
+  Parameter parameter = 1;
+
+  enum ExpressionType {
+    GAIN = 0;
+    PAN = 1;
+    TRANSPOSE = 2;
+    TIMBRE = 3;
+    FORMANT = 4;
+    PRESSURE = 5;
+
+    // MIDI
+    CHANNEL_CONTROLLER = 6;
+    CHANNEL_PRESSURE = 7;
+    POLY_PRESSURE = 8;
+    PITCH_BEND = 9;
+    PROGRAM_CHANGE = 10;
+  }
+  ExpressionType expression = 2;
+
+  // MIDI channel
+  int32 channel = 3;
+  // MIDI key used when expression = POLY_PRESSURE.
+  int32 key = 4;
+  // MIDI key used when expression = CHANNEL_CONTROLLER.
+  int32 controller = 5;
+}
+
+message Point {
+  double time = 1;
+}
+
+message Points {
+  Timeline base = 1;
+  AutomationTarget target = 2;
+  repeated Point points = 3;
+  Unit unit = 4;
+
+  // Interpolation mode used for this timeline. Default to 'hold' when
+  // unspecified.
+  enum Interpolation {
+    HOLD = 0;
+    LINEAR = 1;
+  }
+  Interpolation interporation = 5;
+}
+
+message Marker {
+  Namable base = 1;
+  double time = 2;
+}
+
+message Markers {
+  Timeline base = 1;
+  repeated Marker markers = 2;
+}
+
+// END: Originally defined in timeline dir.
+
+message Arrangement {
+  // Automation data for time-signature inside this Arrangement
+  Points time_signature_automation = 1;
+
+  // Automation data for tempo inside this Arrangement, which will define the
+  // conversion between seconds and beats at the root level.
+  Points tempo_automation = 2;
+
+  // Cue markers inside this arrangement
+  Markers markers = 3;
+
+  Lanes lanes = 4;
+}
+
+message Scenes {
+  // TODO
+}
+
+message Application {
+  string name = 1;
+  string version = 2;
+}
+
+message Project {
+  string version = 1; // default "0.1"
+  Application application = 2;
+  Transport transport = 3;
+  repeated Lane structure = 4;
+  Arrangement arrangement = 5;
+  repeated Scenes scenes = 6;
+}
