@@ -7,6 +7,7 @@
 
 syntax = "proto3";
 
+import "proto/common.proto";
 import "proto/timeline.proto";
 import "proto/track.proto";
 import "proto/parameter.proto";
@@ -33,7 +34,8 @@ message Arrangement {
 }
 
 message Scenes {
-  // TODO
+  Referencable base = 1;
+  Timeline content = 2;
 }
 
 message Application {
